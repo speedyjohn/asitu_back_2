@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+    <title>Weather App</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        .weather-info {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+<h1>Weather App</h1>
+<form id="weather-form">
+    <label for="city">Enter city name:</label>
+    <input type="text" id="city" name="city" value="Astana" autofocus required />
+    <button type="submit">Get Weather</button>
+</form>
+<div id="weather-result" class="weather-info"></div>
+<div id="map" style="height: 400px; width: 400px"></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script>
+    const form = document.getElementById('weather-form');
+    const resultDiv = document.getElementById('weather-result');
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const city = document.getElementById('city').value;
+        resultDiv.innerHTML = 'Loading...';
+        const catFactResponse = await fetch('/catfact');
+        const catFactData = await catFactResponse.json();
+        const jokeResponse = await fetch('/joke');
+        const jokeData = await jokeResponse.json();
+        if (jokeData.joke) {
+            resultDiv.innerHTML += `<p>Joke: ${jokeData.joke}</p>`;
+        }
+
+        try {
+            const response = await fetch(`/weather?city=${encodeURIComponent(city)}`);
+            const data = await response.json();
+
+            if (data.error) {
+                resultDiv.innerHTML = `<p style="color: red;">${data.error}</p>`;
+            } else {
+                console.log(data)
+                resultDiv.innerHTML = `
+            <p>Joke: <i>${jokeData.joke}</i></p>
+            <p>Cat Fact: <i>${catFactData.fact}</i></p>
+            <h3>Weather in ${data.name}:</h3>
+            <p>Temperature: ${data.main.temp}°C</p>
+            <p>Description: ${data.weather[0].description}</p>
+            <p>Coordinates: ${data.coord.lat}, ${data.coord.lon}</p>
+            <p>Feels like: ${data.main.feels_like}</p>
+            <p>Humidity: ${data.main.humidity}</p>
+            <p>Pressure: ${data.main.pressure}</p>
+            <p>Wind speed: ${data.wind.speed}</p>
+            <p>Country code: ${data.sys.country}</p>
+            `;
+            let map = L.map('map').setView([data.coord.lat, data.coord.lon], 10);
+
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            }
+        } catch (error) {
+            resultDiv.innerHTML = `<p style="color: red;">Error fetching data.</p>`;
+        }
+    });
+</script>
+</body>
+</html>
